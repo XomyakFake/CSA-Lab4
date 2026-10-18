@@ -1,0 +1,101 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - copyloopvar
+    - dupword
+    - errcheck
+    - errorlint
+    - exhaustive
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gocritic
+    - godot
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - nolintlint
+    - perfsprint
+    - prealloc
+    - predeclared
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        # порядок полей как на схеме и в формате микрокоманды, экономить байты на выравнивании тут незачем
+        - fieldalignment
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        # сигналы и регистры это маленькие структуры, их проще передавать по значению
+        - hugeParam
+    exhaustive:
+      # у switch по опкодам и режимам всегда есть default с ошибкой
+      default-signifies-exhaustive: true
+    revive:
+      # exported и package-comments не включаем. Пакеты лежат в internal и нужны только
+      # этому проекту, а комментарии пишем там, где они правда что-то объясняют
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: early-return
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: if-return
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: unexported-return
+        - name: unnecessary-stmt
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: useless-break
+        - name: var-declaration
+        - name: var-naming
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
+  exclusions:
+    rules:
+      # транслятор и модель это консольные утилиты, они открывают файлы по путям из командной строки
+      - linters: [gosec]
+        text: "G304"
+      # int32, uint32 и uint8 тут это просто разный взгляд на биты 32-битного слова,
+      # арифметика модели и так идёт по модулю 2^32
+      - linters: [gosec]
+        text: "G115"
+      # листинг, бинарник и эталоны не секретные, права 0644 обычные
+      - linters: [gosec]
+        text: "G306"
+
+formatters:
+  enable:
+    - gofumpt

@@ -22,6 +22,8 @@ type Cache struct {
 
 	busy bool // идёт обращение к памяти (промах или режим без кеша)
 	wait int  // сколько тактов ожидания осталось
+
+	Hits, Misses int // для статистики в конце
 }
 
 func newCache(mem []uint32, enabled bool) *Cache {
@@ -46,14 +48,18 @@ func (c *Cache) Access(addr uint32, write bool, wdata uint32) (ready bool, rdata
 		}
 	case !c.enabled:
 		c.busy, c.wait = true, missWait
+		c.Misses++
 		return false, 0, "memory access"
 	case line.valid && line.tag == tag:
+		c.Hits++
 		event = "hit"
 	case line.valid && line.dirty:
 		c.busy, c.wait = true, missDirtyWait
+		c.Misses++
 		return false, 0, "miss, write back dirty line"
 	default:
 		c.busy, c.wait = true, missWait
+		c.Misses++
 		return false, 0, "miss"
 	}
 

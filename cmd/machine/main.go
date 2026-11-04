@@ -66,6 +66,9 @@ func run(args []string) error {
 	if _, err = os.Stdout.Write(m.IO.Output); err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "stop: %s, instructions: %d, ticks: %d\n", m.StopReason, m.Instructions, m.Ticks)
+	fmt.Fprintf(os.Stderr, "stop: %s, instructions: %d, ticks: %d (waiting for memory: %d)\n",
+		m.StopReason, m.Instructions, m.Ticks, m.WaitTicks)
+	fmt.Fprintf(os.Stderr, "I-cache hits: %d, misses: %d, D-cache hits: %d, misses: %d\n",
+		m.ICache.Hits, m.ICache.Misses, m.DCache.Hits, m.DCache.Misses)
 	return nil
 }

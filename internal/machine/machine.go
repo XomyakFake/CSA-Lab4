@@ -37,6 +37,7 @@ type Machine struct {
 	log      io.Writer // nil если журнал не нужен
 	logLimit int       // 0 значит без ограничения
 	logLines int
+	logTail  []string // конец журнала, печатается после остановки
 }
 
 func New(prog isa.Program, input []byte, useCache bool) *Machine {
@@ -65,11 +66,13 @@ func (m *Machine) Run(maxTicks int) {
 		}
 		m.Tick()
 	}
-	if m.logLimit > 0 && m.logLines > m.logLimit {
-		shown, total := m.logLimit, m.logLines
-		m.logLimit = 0 // строка об обрезке печатается всегда
-		m.logLine("... log truncated: %d of %d lines shown", shown, total)
+	if skipped := m.logLines - m.logLimit; m.logLimit > 0 && skipped > 0 {
+		m.writeLog(fmt.Sprintf("... %d lines skipped ...", skipped))
 	}
+	for _, line := range m.logTail { // конец журнала печатаем после остановки
+		m.writeLog(line)
+	}
+	m.logTail = nil
 }
 
 func (m *Machine) stop(reason string) {
@@ -231,10 +234,22 @@ func (m *Machine) logLine(format string, args ...any) {
 		return
 	}
 	m.logLines++
-	if m.logLimit == 0 || m.logLines <= m.logLimit {
-		// журнал отладочный, ошибка записи в него не должна ломать моделирование
-		_, _ = fmt.Fprintf(m.log, format+"\n", args...)
+	line := fmt.Sprintf(format, args...)
+	head, tail := m.logLimit-m.logLimit/2, m.logLimit/2 // начало печатаем сразу, конец копим до остановки
+	switch {
+	case m.logLimit == 0 || m.logLines <= head:
+		m.writeLog(line)
+	case tail > 0:
+		if len(m.logTail) == tail {
+			m.logTail = m.logTail[1:]
+		}
+		m.logTail = append(m.logTail, line)
 	}
+}
+
+func (m *Machine) writeLog(line string) {
+	// журнал отладочный, ошибка записи в него не должна ломать моделирование
+	_, _ = fmt.Fprintln(m.log, line)
 }
 
 func (m *Machine) logInstruction() {

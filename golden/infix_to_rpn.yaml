@@ -1,0 +1,1116 @@
+source: |
+  const BUF = 64;
+  auto line[BUF]; // входная строка
+  auto res[BUF * 2]; // результат как C-строка
+  auto ops[BUF]; // стек операторов
+  auto len = 0; // длина результата
+  auto top = 0; // число операторов в стеке
+
+  func print_str(auto s) {
+      auto i = 0;
+      while (s[i] != '\0') {
+          out(s[i]);
+          i = i + 1;
+      }
+  }
+
+  func read_line(auto buf) {
+      auto i = 0;
+      auto c = in();
+      while (c != '\n') {
+          if (i >= BUF - 1) {
+              return -1; // строка не влезла в буфер
+          }
+          buf[i] = c;
+          i = i + 1;
+          c = in();
+      }
+      buf[i] = '\0';
+      return i;
+  }
+
+  func priority(auto op) {
+      if (op == '*' || op == '/') {
+          return 2;
+      }
+      return 1;
+  }
+
+  func emit(auto c) {
+      res[len] = c;
+      len = len + 1;
+  }
+
+  func pop_op() {
+      top = top - 1;
+      emit(ops[top]);
+      emit(' ');
+  }
+
+  func convert() { // сортировочная станция, при ошибке в выражении вернёт -1
+      auto i = 0;
+      while (line[i] != '\0') {
+          auto c = line[i];
+          if (c == ' ') {
+              i = i + 1;
+          } else if (c >= '0' && c <= '9') {
+              while (line[i] >= '0' && line[i] <= '9') {
+                  emit(line[i]);
+                  i = i + 1;
+              }
+              emit(' ');
+          } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+              // выталкиваем операторы не слабее текущего, так получается левая ассоциативность
+              while (top > 0 && ops[top - 1] != '(' && priority(ops[top - 1]) >= priority(c)) {
+                  pop_op();
+              }
+              ops[top] = c;
+              top = top + 1;
+              i = i + 1;
+          } else if (c == '(') {
+              ops[top] = c;
+              top = top + 1;
+              i = i + 1;
+          } else if (c == ')') {
+              while (top > 0 && ops[top - 1] != '(') {
+                  pop_op();
+              }
+              if (top == 0) {
+                  return -1; // лишняя закрывающая скобка
+              }
+              top = top - 1;
+              i = i + 1;
+          } else {
+              return -1; // неизвестный символ
+          }
+      }
+      while (top > 0) {
+          if (ops[top - 1] == '(') {
+              return -1; // осталась незакрытая скобка
+          }
+          pop_op();
+      }
+      if (len > 0) {
+          len = len - 1; // убрать пробел после последней лексемы
+      }
+      res[len] = '\0';
+      return 0;
+  }
+
+  if (read_line(line) == -1 || convert() == -1) {
+      print_str("-1");
+  } else {
+      print_str(res);
+  }
+  out('\n');
+input: |
+  (1 + 2) * 3 - 40 / 5
+log_limit: 150
+ast: |
+  Program
+    Const BUF
+      Num 64
+    Array line
+      Ident BUF
+    Array res
+      Binary *
+        Ident BUF
+        Num 2
+    Array ops
+      Ident BUF
+    Var len
+      Num 0
+    Var top
+      Num 0
+    Func print_str(s)
+      Var i
+        Num 0
+      While
+        Binary !=
+          Index
+            Ident s
+            Ident i
+          Char '\0'
+        Block
+          Call out
+            Index
+              Ident s
+              Ident i
+          Assign
+            Ident i
+            Binary +
+              Ident i
+              Num 1
+    Func read_line(buf)
+      Var i
+        Num 0
+      Var c
+        Call in
+      While
+        Binary !=
+          Ident c
+          Char '\n'
+        Block
+          If
+            Binary >=
+              Ident i
+              Binary -
+                Ident BUF
+                Num 1
+            Block
+              Return
+                Unary -
+                  Num 1
+          Assign
+            Index
+              Ident buf
+              Ident i
+            Ident c
+          Assign
+            Ident i
+            Binary +
+              Ident i
+              Num 1
+          Assign
+            Ident c
+            Call in
+      Assign
+        Index
+          Ident buf
+          Ident i
+        Char '\0'
+      Return
+        Ident i
+    Func priority(op)
+      If
+        Binary ||
+          Binary ==
+            Ident op
+            Char '*'
+          Binary ==
+            Ident op
+            Char '/'
+        Block
+          Return
+            Num 2
+      Return
+        Num 1
+    Func emit(c)
+      Assign
+        Index
+          Ident res
+          Ident len
+        Ident c
+      Assign
+        Ident len
+        Binary +
+          Ident len
+          Num 1
+    Func pop_op()
+      Assign
+        Ident top
+        Binary -
+          Ident top
+          Num 1
+      Call emit
+        Index
+          Ident ops
+          Ident top
+      Call emit
+        Char ' '
+    Func convert()
+      Var i
+        Num 0
+      While
+        Binary !=
+          Index
+            Ident line
+            Ident i
+          Char '\0'
+        Block
+          Var c
+            Index
+              Ident line
+              Ident i
+          If
+            Binary ==
+              Ident c
+              Char ' '
+            Block
+              Assign
+                Ident i
+                Binary +
+                  Ident i
+                  Num 1
+            If
+              Binary &&
+                Binary >=
+                  Ident c
+                  Char '0'
+                Binary <=
+                  Ident c
+                  Char '9'
+              Block
+                While
+                  Binary &&
+                    Binary >=
+                      Index
+                        Ident line
+                        Ident i
+                      Char '0'
+                    Binary <=
+                      Index
+                        Ident line
+                        Ident i
+                      Char '9'
+                  Block
+                    Call emit
+                      Index
+                        Ident line
+                        Ident i
+                    Assign
+                      Ident i
+                      Binary +
+                        Ident i
+                        Num 1
+                Call emit
+                  Char ' '
+              If
+                Binary ||
+                  Binary ||
+                    Binary ||
+                      Binary ==
+                        Ident c
+                        Char '+'
+                      Binary ==
+                        Ident c
+                        Char '-'
+                    Binary ==
+                      Ident c
+                      Char '*'
+                  Binary ==
+                    Ident c
+                    Char '/'
+                Block
+                  While
+                    Binary &&
+                      Binary &&
+                        Binary >
+                          Ident top
+                          Num 0
+                        Binary !=
+                          Index
+                            Ident ops
+                            Binary -
+                              Ident top
+                              Num 1
+                          Char '('
+                      Binary >=
+                        Call priority
+                          Index
+                            Ident ops
+                            Binary -
+                              Ident top
+                              Num 1
+                        Call priority
+                          Ident c
+                    Block
+                      Call pop_op
+                  Assign
+                    Index
+                      Ident ops
+                      Ident top
+                    Ident c
+                  Assign
+                    Ident top
+                    Binary +
+                      Ident top
+                      Num 1
+                  Assign
+                    Ident i
+                    Binary +
+                      Ident i
+                      Num 1
+                If
+                  Binary ==
+                    Ident c
+                    Char '('
+                  Block
+                    Assign
+                      Index
+                        Ident ops
+                        Ident top
+                      Ident c
+                    Assign
+                      Ident top
+                      Binary +
+                        Ident top
+                        Num 1
+                    Assign
+                      Ident i
+                      Binary +
+                        Ident i
+                        Num 1
+                  If
+                    Binary ==
+                      Ident c
+                      Char ')'
+                    Block
+                      While
+                        Binary &&
+                          Binary >
+                            Ident top
+                            Num 0
+                          Binary !=
+                            Index
+                              Ident ops
+                              Binary -
+                                Ident top
+                                Num 1
+                            Char '('
+                        Block
+                          Call pop_op
+                      If
+                        Binary ==
+                          Ident top
+                          Num 0
+                        Block
+                          Return
+                            Unary -
+                              Num 1
+                      Assign
+                        Ident top
+                        Binary -
+                          Ident top
+                          Num 1
+                      Assign
+                        Ident i
+                        Binary +
+                          Ident i
+                          Num 1
+                    Block
+                      Return
+                        Unary -
+                          Num 1
+      While
+        Binary >
+          Ident top
+          Num 0
+        Block
+          If
+            Binary ==
+              Index
+                Ident ops
+                Binary -
+                  Ident top
+                  Num 1
+              Char '('
+            Block
+              Return
+                Unary -
+                  Num 1
+          Call pop_op
+      If
+        Binary >
+          Ident len
+          Num 0
+        Block
+          Assign
+            Ident len
+            Binary -
+              Ident len
+              Num 1
+      Assign
+        Index
+          Ident res
+          Ident len
+        Char '\0'
+      Return
+        Num 0
+    If
+      Binary ||
+        Binary ==
+          Call read_line
+            Ident line
+          Unary -
+            Num 1
+        Binary ==
+          Call convert
+          Unary -
+            Num 1
+      Block
+        Call print_str
+          Str "-1"
+      Block
+        Call print_str
+          Ident res
+    Call out
+      Char '\n'
+code: |
+  0000 - 01302000 00000088 00000000 - mov [0x0088], #0
+  000C - 01302000 0000008C 00000000 - mov [0x008C], #0
+  0018 - 02000001 00200000 00000090 - push #144
+  0024 - 40200000 00000150 - call #0x0150
+  002C - 10192000 00000004 - add SP, #4
+  0034 - 01111000 - mov R1, R0
+  0038 - 19112000 FFFFFFFF - cmp R1, #-1
+  0040 - 21200000 00000064 - jeq #0x0064
+  0048 - 40200000 00000350 - call #0x0350
+  0050 - 01111000 - mov R1, R0
+  0054 - 19112000 FFFFFFFF - cmp R1, #-1
+  005C - 22200000 00000088 - jne #0x0088
+  0064 - 02000001 00200000 00000490 - push #1168
+  0070 - 40200000 000000B4 - call #0x00B4
+  0078 - 10192000 00000004 - add SP, #4
+  0080 - 20200000 000000A4 - jmp #0x00A4
+  0088 - 02000001 00200000 00000190 - push #400
+  0094 - 40200000 000000B4 - call #0x00B4
+  009C - 10192000 00000004 - add SP, #4
+  00A4 - 01302000 00000084 0000000A - mov [0x0084], #10
+  00B0 - 00000000 - halt
+  ; print_str
+  00B4 - 02000001 00180000 - push FP
+  00BC - 01181900 - mov FP, SP
+  00C0 - 11192000 00000004 - sub SP, #4
+  00C8 - 01582000 FFFFFFFC 00000000 - mov [FP-4], #0
+  00D4 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  00DC - 12112000 00000004 - mul R1, #4
+  00E4 - 10115800 00000008 - add R1, [FP+8]
+  00EC - 01114100 - mov R1, [R1]
+  00F0 - 19112000 00000000 - cmp R1, #0
+  00F8 - 21200000 00000138 - jeq #0x0138
+  0100 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  0108 - 12112000 00000004 - mul R1, #4
+  0110 - 10115800 00000008 - add R1, [FP+8]
+  0118 - 01114100 - mov R1, [R1]
+  011C - 01301100 00000084 - mov [0x0084], R1
+  0124 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  0130 - 20200000 000000D4 - jmp #0x00D4
+  0138 - 01102000 00000000 - mov R0, #0
+  0140 - 01191800 - mov SP, FP
+  0144 - 03000001 00180000 - pop FP
+  014C - 41000000 - ret
+  ; read_line
+  0150 - 02000001 00180000 - push FP
+  0158 - 01181900 - mov FP, SP
+  015C - 11192000 00000008 - sub SP, #8
+  0164 - 01582000 FFFFFFFC 00000000 - mov [FP-4], #0
+  0170 - 01583000 FFFFFFF8 00000080 - mov [FP-8], [0x0080]
+  017C - 19582000 FFFFFFF8 0000000A - cmp [FP-8], #10
+  0188 - 21200000 000001F4 - jeq #0x01F4
+  0190 - 19582000 FFFFFFFC 0000003F - cmp [FP-4], #63
+  019C - 23200000 000001B4 - jlt #0x01B4
+  01A4 - 01102000 FFFFFFFF - mov R0, #-1
+  01AC - 20200000 0000021C - jmp #0x021C
+  01B4 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  01BC - 12112000 00000004 - mul R1, #4
+  01C4 - 10115800 00000008 - add R1, [FP+8]
+  01CC - 01415800 FFFFFFF8 - mov [R1], [FP-8]
+  01D4 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  01E0 - 01583000 FFFFFFF8 00000080 - mov [FP-8], [0x0080]
+  01EC - 20200000 0000017C - jmp #0x017C
+  01F4 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  01FC - 12112000 00000004 - mul R1, #4
+  0204 - 10115800 00000008 - add R1, [FP+8]
+  020C - 01412000 00000000 - mov [R1], #0
+  0214 - 01105800 FFFFFFFC - mov R0, [FP-4]
+  021C - 01191800 - mov SP, FP
+  0220 - 03000001 00180000 - pop FP
+  0228 - 41000000 - ret
+  ; priority
+  022C - 02000001 00180000 - push FP
+  0234 - 01181900 - mov FP, SP
+  0238 - 19582000 00000008 0000002A - cmp [FP+8], #42
+  0244 - 21200000 00000260 - jeq #0x0260
+  024C - 19582000 00000008 0000002F - cmp [FP+8], #47
+  0258 - 22200000 00000270 - jne #0x0270
+  0260 - 01102000 00000002 - mov R0, #2
+  0268 - 20200000 00000278 - jmp #0x0278
+  0270 - 01102000 00000001 - mov R0, #1
+  0278 - 01191800 - mov SP, FP
+  027C - 03000001 00180000 - pop FP
+  0284 - 41000000 - ret
+  ; emit
+  0288 - 02000001 00180000 - push FP
+  0290 - 01181900 - mov FP, SP
+  0294 - 01113000 00000088 - mov R1, [0x0088]
+  029C - 12112000 00000004 - mul R1, #4
+  02A4 - 01515800 00000190 00000008 - mov [R1+400], [FP+8]
+  02B0 - 10302000 00000088 00000001 - add [0x0088], #1
+  02BC - 01102000 00000000 - mov R0, #0
+  02C4 - 01191800 - mov SP, FP
+  02C8 - 03000001 00180000 - pop FP
+  02D0 - 41000000 - ret
+  ; pop_op
+  02D4 - 02000001 00180000 - push FP
+  02DC - 01181900 - mov FP, SP
+  02E0 - 11302000 0000008C 00000001 - sub [0x008C], #1
+  02EC - 01113000 0000008C - mov R1, [0x008C]
+  02F4 - 12112000 00000004 - mul R1, #4
+  02FC - 01115100 00000390 - mov R1, [R1+912]
+  0304 - 02000001 00110000 - push R1
+  030C - 40200000 00000288 - call #0x0288
+  0314 - 10192000 00000004 - add SP, #4
+  031C - 02000001 00200000 00000020 - push #32
+  0328 - 40200000 00000288 - call #0x0288
+  0330 - 10192000 00000004 - add SP, #4
+  0338 - 01102000 00000000 - mov R0, #0
+  0340 - 01191800 - mov SP, FP
+  0344 - 03000001 00180000 - pop FP
+  034C - 41000000 - ret
+  ; convert
+  0350 - 02000001 00180000 - push FP
+  0358 - 01181900 - mov FP, SP
+  035C - 11192000 00000008 - sub SP, #8
+  0364 - 01582000 FFFFFFFC 00000000 - mov [FP-4], #0
+  0370 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  0378 - 12112000 00000004 - mul R1, #4
+  0380 - 01115100 00000090 - mov R1, [R1+144]
+  0388 - 19112000 00000000 - cmp R1, #0
+  0390 - 21200000 0000072C - jeq #0x072C
+  0398 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  03A0 - 12112000 00000004 - mul R1, #4
+  03A8 - 01115100 00000090 - mov R1, [R1+144]
+  03B0 - 01581100 FFFFFFF8 - mov [FP-8], R1
+  03B8 - 19582000 FFFFFFF8 00000020 - cmp [FP-8], #32
+  03C4 - 22200000 000003E0 - jne #0x03E0
+  03CC - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  03D8 - 20200000 00000724 - jmp #0x0724
+  03E0 - 19582000 FFFFFFF8 00000030 - cmp [FP-8], #48
+  03EC - 23200000 000004C0 - jlt #0x04C0
+  03F4 - 19582000 FFFFFFF8 00000039 - cmp [FP-8], #57
+  0400 - 25200000 000004C0 - jgt #0x04C0
+  0408 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  0410 - 12112000 00000004 - mul R1, #4
+  0418 - 01115100 00000090 - mov R1, [R1+144]
+  0420 - 19112000 00000030 - cmp R1, #48
+  0428 - 23200000 0000049C - jlt #0x049C
+  0430 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  0438 - 12112000 00000004 - mul R1, #4
+  0440 - 01115100 00000090 - mov R1, [R1+144]
+  0448 - 19112000 00000039 - cmp R1, #57
+  0450 - 25200000 0000049C - jgt #0x049C
+  0458 - 01115800 FFFFFFFC - mov R1, [FP-4]
+  0460 - 12112000 00000004 - mul R1, #4
+  0468 - 01115100 00000090 - mov R1, [R1+144]
+  0470 - 02000001 00110000 - push R1
+  0478 - 40200000 00000288 - call #0x0288
+  0480 - 10192000 00000004 - add SP, #4
+  0488 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  0494 - 20200000 00000408 - jmp #0x0408
+  049C - 02000001 00200000 00000020 - push #32
+  04A8 - 40200000 00000288 - call #0x0288
+  04B0 - 10192000 00000004 - add SP, #4
+  04B8 - 20200000 00000724 - jmp #0x0724
+  04C0 - 19582000 FFFFFFF8 0000002B - cmp [FP-8], #43
+  04CC - 21200000 00000510 - jeq #0x0510
+  04D4 - 19582000 FFFFFFF8 0000002D - cmp [FP-8], #45
+  04E0 - 21200000 00000510 - jeq #0x0510
+  04E8 - 19582000 FFFFFFF8 0000002A - cmp [FP-8], #42
+  04F4 - 21200000 00000510 - jeq #0x0510
+  04FC - 19582000 FFFFFFF8 0000002F - cmp [FP-8], #47
+  0508 - 22200000 00000618 - jne #0x0618
+  0510 - 19302000 0000008C 00000000 - cmp [0x008C], #0
+  051C - 24200000 000005DC - jle #0x05DC
+  0524 - 01113000 0000008C - mov R1, [0x008C]
+  052C - 11112000 00000001 - sub R1, #1
+  0534 - 12112000 00000004 - mul R1, #4
+  053C - 01115100 00000390 - mov R1, [R1+912]
+  0544 - 19112000 00000028 - cmp R1, #40
+  054C - 21200000 000005DC - jeq #0x05DC
+  0554 - 01113000 0000008C - mov R1, [0x008C]
+  055C - 11112000 00000001 - sub R1, #1
+  0564 - 12112000 00000004 - mul R1, #4
+  056C - 01115100 00000390 - mov R1, [R1+912]
+  0574 - 02000001 00110000 - push R1
+  057C - 40200000 0000022C - call #0x022C
+  0584 - 10192000 00000004 - add SP, #4
+  058C - 01111000 - mov R1, R0
+  0590 - 02000001 00110000 - push R1
+  0598 - 02000001 00580000 FFFFFFF8 - push [FP-8]
+  05A4 - 40200000 0000022C - call #0x022C
+  05AC - 10192000 00000004 - add SP, #4
+  05B4 - 03000001 00110000 - pop R1
+  05BC - 01121000 - mov R2, R0
+  05C0 - 19111200 - cmp R1, R2
+  05C4 - 23200000 000005DC - jlt #0x05DC
+  05CC - 40200000 000002D4 - call #0x02D4
+  05D4 - 20200000 00000510 - jmp #0x0510
+  05DC - 01113000 0000008C - mov R1, [0x008C]
+  05E4 - 12112000 00000004 - mul R1, #4
+  05EC - 01515800 00000390 FFFFFFF8 - mov [R1+912], [FP-8]
+  05F8 - 10302000 0000008C 00000001 - add [0x008C], #1
+  0604 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  0610 - 20200000 00000724 - jmp #0x0724
+  0618 - 19582000 FFFFFFF8 00000028 - cmp [FP-8], #40
+  0624 - 22200000 00000668 - jne #0x0668
+  062C - 01113000 0000008C - mov R1, [0x008C]
+  0634 - 12112000 00000004 - mul R1, #4
+  063C - 01515800 00000390 FFFFFFF8 - mov [R1+912], [FP-8]
+  0648 - 10302000 0000008C 00000001 - add [0x008C], #1
+  0654 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  0660 - 20200000 00000724 - jmp #0x0724
+  0668 - 19582000 FFFFFFF8 00000029 - cmp [FP-8], #41
+  0674 - 22200000 00000714 - jne #0x0714
+  067C - 19302000 0000008C 00000000 - cmp [0x008C], #0
+  0688 - 24200000 000006D0 - jle #0x06D0
+  0690 - 01113000 0000008C - mov R1, [0x008C]
+  0698 - 11112000 00000001 - sub R1, #1
+  06A0 - 12112000 00000004 - mul R1, #4
+  06A8 - 01115100 00000390 - mov R1, [R1+912]
+  06B0 - 19112000 00000028 - cmp R1, #40
+  06B8 - 21200000 000006D0 - jeq #0x06D0
+  06C0 - 40200000 000002D4 - call #0x02D4
+  06C8 - 20200000 0000067C - jmp #0x067C
+  06D0 - 19302000 0000008C 00000000 - cmp [0x008C], #0
+  06DC - 22200000 000006F4 - jne #0x06F4
+  06E4 - 01102000 FFFFFFFF - mov R0, #-1
+  06EC - 20200000 000007D4 - jmp #0x07D4
+  06F4 - 11302000 0000008C 00000001 - sub [0x008C], #1
+  0700 - 10582000 FFFFFFFC 00000001 - add [FP-4], #1
+  070C - 20200000 00000724 - jmp #0x0724
+  0714 - 01102000 FFFFFFFF - mov R0, #-1
+  071C - 20200000 000007D4 - jmp #0x07D4
+  0724 - 20200000 00000370 - jmp #0x0370
+  072C - 19302000 0000008C 00000000 - cmp [0x008C], #0
+  0738 - 24200000 00000790 - jle #0x0790
+  0740 - 01113000 0000008C - mov R1, [0x008C]
+  0748 - 11112000 00000001 - sub R1, #1
+  0750 - 12112000 00000004 - mul R1, #4
+  0758 - 01115100 00000390 - mov R1, [R1+912]
+  0760 - 19112000 00000028 - cmp R1, #40
+  0768 - 22200000 00000780 - jne #0x0780
+  0770 - 01102000 FFFFFFFF - mov R0, #-1
+  0778 - 20200000 000007D4 - jmp #0x07D4
+  0780 - 40200000 000002D4 - call #0x02D4
+  0788 - 20200000 0000072C - jmp #0x072C
+  0790 - 19302000 00000088 00000000 - cmp [0x0088], #0
+  079C - 24200000 000007B0 - jle #0x07B0
+  07A4 - 11302000 00000088 00000001 - sub [0x0088], #1
+  07B0 - 01113000 00000088 - mov R1, [0x0088]
+  07B8 - 12112000 00000004 - mul R1, #4
+  07C0 - 01512000 00000190 00000000 - mov [R1+400], #0
+  07CC - 01102000 00000000 - mov R0, #0
+  07D4 - 01191800 - mov SP, FP
+  07D8 - 03000001 00180000 - pop FP
+  07E0 - 41000000 - ret
+data: |
+  0088 - 00000000 - len
+  008C - 00000000 - top
+  0090 - 00000000 - line[0]
+  0094 - 00000000 - line[1]
+  0098 - 00000000 - line[2]
+  009C - 00000000 - line[3]
+  00A0 - 00000000 - line[4]
+  00A4 - 00000000 - line[5]
+  00A8 - 00000000 - line[6]
+  00AC - 00000000 - line[7]
+  00B0 - 00000000 - line[8]
+  00B4 - 00000000 - line[9]
+  00B8 - 00000000 - line[10]
+  00BC - 00000000 - line[11]
+  00C0 - 00000000 - line[12]
+  00C4 - 00000000 - line[13]
+  00C8 - 00000000 - line[14]
+  00CC - 00000000 - line[15]
+  00D0 - 00000000 - line[16]
+  00D4 - 00000000 - line[17]
+  00D8 - 00000000 - line[18]
+  00DC - 00000000 - line[19]
+  00E0 - 00000000 - line[20]
+  00E4 - 00000000 - line[21]
+  00E8 - 00000000 - line[22]
+  00EC - 00000000 - line[23]
+  00F0 - 00000000 - line[24]
+  00F4 - 00000000 - line[25]
+  00F8 - 00000000 - line[26]
+  00FC - 00000000 - line[27]
+  0100 - 00000000 - line[28]
+  0104 - 00000000 - line[29]
+  0108 - 00000000 - line[30]
+  010C - 00000000 - line[31]
+  0110 - 00000000 - line[32]
+  0114 - 00000000 - line[33]
+  0118 - 00000000 - line[34]
+  011C - 00000000 - line[35]
+  0120 - 00000000 - line[36]
+  0124 - 00000000 - line[37]
+  0128 - 00000000 - line[38]
+  012C - 00000000 - line[39]
+  0130 - 00000000 - line[40]
+  0134 - 00000000 - line[41]
+  0138 - 00000000 - line[42]
+  013C - 00000000 - line[43]
+  0140 - 00000000 - line[44]
+  0144 - 00000000 - line[45]
+  0148 - 00000000 - line[46]
+  014C - 00000000 - line[47]
+  0150 - 00000000 - line[48]
+  0154 - 00000000 - line[49]
+  0158 - 00000000 - line[50]
+  015C - 00000000 - line[51]
+  0160 - 00000000 - line[52]
+  0164 - 00000000 - line[53]
+  0168 - 00000000 - line[54]
+  016C - 00000000 - line[55]
+  0170 - 00000000 - line[56]
+  0174 - 00000000 - line[57]
+  0178 - 00000000 - line[58]
+  017C - 00000000 - line[59]
+  0180 - 00000000 - line[60]
+  0184 - 00000000 - line[61]
+  0188 - 00000000 - line[62]
+  018C - 00000000 - line[63]
+  0190 - 00000000 - res[0]
+  0194 - 00000000 - res[1]
+  0198 - 00000000 - res[2]
+  019C - 00000000 - res[3]
+  01A0 - 00000000 - res[4]
+  01A4 - 00000000 - res[5]
+  01A8 - 00000000 - res[6]
+  01AC - 00000000 - res[7]
+  01B0 - 00000000 - res[8]
+  01B4 - 00000000 - res[9]
+  01B8 - 00000000 - res[10]
+  01BC - 00000000 - res[11]
+  01C0 - 00000000 - res[12]
+  01C4 - 00000000 - res[13]
+  01C8 - 00000000 - res[14]
+  01CC - 00000000 - res[15]
+  01D0 - 00000000 - res[16]
+  01D4 - 00000000 - res[17]
+  01D8 - 00000000 - res[18]
+  01DC - 00000000 - res[19]
+  01E0 - 00000000 - res[20]
+  01E4 - 00000000 - res[21]
+  01E8 - 00000000 - res[22]
+  01EC - 00000000 - res[23]
+  01F0 - 00000000 - res[24]
+  01F4 - 00000000 - res[25]
+  01F8 - 00000000 - res[26]
+  01FC - 00000000 - res[27]
+  0200 - 00000000 - res[28]
+  0204 - 00000000 - res[29]
+  0208 - 00000000 - res[30]
+  020C - 00000000 - res[31]
+  0210 - 00000000 - res[32]
+  0214 - 00000000 - res[33]
+  0218 - 00000000 - res[34]
+  021C - 00000000 - res[35]
+  0220 - 00000000 - res[36]
+  0224 - 00000000 - res[37]
+  0228 - 00000000 - res[38]
+  022C - 00000000 - res[39]
+  0230 - 00000000 - res[40]
+  0234 - 00000000 - res[41]
+  0238 - 00000000 - res[42]
+  023C - 00000000 - res[43]
+  0240 - 00000000 - res[44]
+  0244 - 00000000 - res[45]
+  0248 - 00000000 - res[46]
+  024C - 00000000 - res[47]
+  0250 - 00000000 - res[48]
+  0254 - 00000000 - res[49]
+  0258 - 00000000 - res[50]
+  025C - 00000000 - res[51]
+  0260 - 00000000 - res[52]
+  0264 - 00000000 - res[53]
+  0268 - 00000000 - res[54]
+  026C - 00000000 - res[55]
+  0270 - 00000000 - res[56]
+  0274 - 00000000 - res[57]
+  0278 - 00000000 - res[58]
+  027C - 00000000 - res[59]
+  0280 - 00000000 - res[60]
+  0284 - 00000000 - res[61]
+  0288 - 00000000 - res[62]
+  028C - 00000000 - res[63]
+  0290 - 00000000 - res[64]
+  0294 - 00000000 - res[65]
+  0298 - 00000000 - res[66]
+  029C - 00000000 - res[67]
+  02A0 - 00000000 - res[68]
+  02A4 - 00000000 - res[69]
+  02A8 - 00000000 - res[70]
+  02AC - 00000000 - res[71]
+  02B0 - 00000000 - res[72]
+  02B4 - 00000000 - res[73]
+  02B8 - 00000000 - res[74]
+  02BC - 00000000 - res[75]
+  02C0 - 00000000 - res[76]
+  02C4 - 00000000 - res[77]
+  02C8 - 00000000 - res[78]
+  02CC - 00000000 - res[79]
+  02D0 - 00000000 - res[80]
+  02D4 - 00000000 - res[81]
+  02D8 - 00000000 - res[82]
+  02DC - 00000000 - res[83]
+  02E0 - 00000000 - res[84]
+  02E4 - 00000000 - res[85]
+  02E8 - 00000000 - res[86]
+  02EC - 00000000 - res[87]
+  02F0 - 00000000 - res[88]
+  02F4 - 00000000 - res[89]
+  02F8 - 00000000 - res[90]
+  02FC - 00000000 - res[91]
+  0300 - 00000000 - res[92]
+  0304 - 00000000 - res[93]
+  0308 - 00000000 - res[94]
+  030C - 00000000 - res[95]
+  0310 - 00000000 - res[96]
+  0314 - 00000000 - res[97]
+  0318 - 00000000 - res[98]
+  031C - 00000000 - res[99]
+  0320 - 00000000 - res[100]
+  0324 - 00000000 - res[101]
+  0328 - 00000000 - res[102]
+  032C - 00000000 - res[103]
+  0330 - 00000000 - res[104]
+  0334 - 00000000 - res[105]
+  0338 - 00000000 - res[106]
+  033C - 00000000 - res[107]
+  0340 - 00000000 - res[108]
+  0344 - 00000000 - res[109]
+  0348 - 00000000 - res[110]
+  034C - 00000000 - res[111]
+  0350 - 00000000 - res[112]
+  0354 - 00000000 - res[113]
+  0358 - 00000000 - res[114]
+  035C - 00000000 - res[115]
+  0360 - 00000000 - res[116]
+  0364 - 00000000 - res[117]
+  0368 - 00000000 - res[118]
+  036C - 00000000 - res[119]
+  0370 - 00000000 - res[120]
+  0374 - 00000000 - res[121]
+  0378 - 00000000 - res[122]
+  037C - 00000000 - res[123]
+  0380 - 00000000 - res[124]
+  0384 - 00000000 - res[125]
+  0388 - 00000000 - res[126]
+  038C - 00000000 - res[127]
+  0390 - 00000000 - ops[0]
+  0394 - 00000000 - ops[1]
+  0398 - 00000000 - ops[2]
+  039C - 00000000 - ops[3]
+  03A0 - 00000000 - ops[4]
+  03A4 - 00000000 - ops[5]
+  03A8 - 00000000 - ops[6]
+  03AC - 00000000 - ops[7]
+  03B0 - 00000000 - ops[8]
+  03B4 - 00000000 - ops[9]
+  03B8 - 00000000 - ops[10]
+  03BC - 00000000 - ops[11]
+  03C0 - 00000000 - ops[12]
+  03C4 - 00000000 - ops[13]
+  03C8 - 00000000 - ops[14]
+  03CC - 00000000 - ops[15]
+  03D0 - 00000000 - ops[16]
+  03D4 - 00000000 - ops[17]
+  03D8 - 00000000 - ops[18]
+  03DC - 00000000 - ops[19]
+  03E0 - 00000000 - ops[20]
+  03E4 - 00000000 - ops[21]
+  03E8 - 00000000 - ops[22]
+  03EC - 00000000 - ops[23]
+  03F0 - 00000000 - ops[24]
+  03F4 - 00000000 - ops[25]
+  03F8 - 00000000 - ops[26]
+  03FC - 00000000 - ops[27]
+  0400 - 00000000 - ops[28]
+  0404 - 00000000 - ops[29]
+  0408 - 00000000 - ops[30]
+  040C - 00000000 - ops[31]
+  0410 - 00000000 - ops[32]
+  0414 - 00000000 - ops[33]
+  0418 - 00000000 - ops[34]
+  041C - 00000000 - ops[35]
+  0420 - 00000000 - ops[36]
+  0424 - 00000000 - ops[37]
+  0428 - 00000000 - ops[38]
+  042C - 00000000 - ops[39]
+  0430 - 00000000 - ops[40]
+  0434 - 00000000 - ops[41]
+  0438 - 00000000 - ops[42]
+  043C - 00000000 - ops[43]
+  0440 - 00000000 - ops[44]
+  0444 - 00000000 - ops[45]
+  0448 - 00000000 - ops[46]
+  044C - 00000000 - ops[47]
+  0450 - 00000000 - ops[48]
+  0454 - 00000000 - ops[49]
+  0458 - 00000000 - ops[50]
+  045C - 00000000 - ops[51]
+  0460 - 00000000 - ops[52]
+  0464 - 00000000 - ops[53]
+  0468 - 00000000 - ops[54]
+  046C - 00000000 - ops[55]
+  0470 - 00000000 - ops[56]
+  0474 - 00000000 - ops[57]
+  0478 - 00000000 - ops[58]
+  047C - 00000000 - ops[59]
+  0480 - 00000000 - ops[60]
+  0484 - 00000000 - ops[61]
+  0488 - 00000000 - ops[62]
+  048C - 00000000 - ops[63]
+  0490 - 0000002D - '-'
+  0494 - 00000031 - '1'
+  0498 - 00000000 - '\0'
+output: |
+  1 2 + 3 * 40 5 / -
+stop: halt
+instructions: 1421
+ticks: 15662
+ticks_no_cache: 46338
+log: |
+  instr 0000: mov [0x0088], #0
+       1 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache miss [0000]
+       2 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       3 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       4 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       5 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       6 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       7 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       8 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+       9 |  0 FETCH     | PC=0000 IR=00000000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0000]
+      10 |  0 FETCH     | PC=0004 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache loaded [0000]
+      11 |  1 DECODE    | PC=0004 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      12 | 13 O1W_ABS   | PC=0008 IR=01302000 EXT=88 OPA=0 OPB=0 ADST=0 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [0004]
+      13 | 14 O1W_ABS+1 | PC=0008 IR=01302000 EXT=88 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      14 | 20 O2_IMM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [0008]
+      15 | 21 O2_IMM+1  | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      16 | 33 EX_MOV    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      17 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache miss [0088]
+      18 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      19 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      20 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      21 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      22 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      23 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      24 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      25 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache wait [0088]
+      26 | 30 WB_MEM    | PC=000C IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache loaded [0088]
+  instr 000C: mov [0x008C], #0
+      27 |  0 FETCH     | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [000C]
+      28 |  1 DECODE    | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      29 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache miss [0010]
+      30 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      31 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      32 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      33 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      34 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      35 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      36 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      37 | 13 O1W_ABS   | PC=0010 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache wait [0010]
+      38 | 13 O1W_ABS   | PC=0014 IR=01302000 EXT=8C OPA=0 OPB=0 ADST=88 AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache loaded [0010]
+      39 | 14 O1W_ABS+1 | PC=0014 IR=01302000 EXT=8C OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      40 | 20 O2_IMM    | PC=0018 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [0014]
+      41 | 21 O2_IMM+1  | PC=0018 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      42 | 33 EX_MOV    | PC=0018 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      43 | 30 WB_MEM    | PC=0018 IR=01302000 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | D-cache hit [008C]
+  instr 0018: push #144
+      44 |  0 FETCH     | PC=001C IR=02000001 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [0018]
+      45 |  1 DECODE    | PC=001C IR=02000001 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=1 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      46 |  2 O1_NONE   | PC=001C IR=02000001 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=1 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      47 | 18 O2_NONE   | PC=001C IR=02000001 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=1 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+      48 | 43 EX_PUSH   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=0 DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [001C]
+      49 | 44 EX_PUSH+1 | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000
+      50 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache miss [0020]
+      51 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      52 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      53 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      54 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      55 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      56 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      57 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      58 |  4 O1R_IMM   | PC=0020 IR=02200001 EXT=0 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache wait [0020]
+      59 |  4 O1R_IMM   | PC=0024 IR=02200001 EXT=90 OPA=0 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | I-cache loaded [0020]
+      60 |  5 O1R_IMM+1 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000
+      61 | 18 O2_NONE   | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000
+      62 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache miss [FFFC]
+      63 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      64 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      65 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      66 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      67 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      68 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      69 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      70 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache wait [FFFC]
+      71 | 45 EX_PUSH+2 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000 | D-cache loaded [FFFC]
+      72 | 46 EX_PUSH+3 | PC=0024 IR=02200001 EXT=90 OPA=90 OPB=0 ADST=8C AR=FFFC DR=0 CNT=0 | R0=0 R1=0 R2=0 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000
+  ... 16933 lines skipped ...
+   15594 |  2 O1_NONE   | PC=013C IR=01102000 EXT=138 OPA=138 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15595 | 20 O2_IMM    | PC=0140 IR=01102000 EXT=0 OPA=138 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache hit [013C]
+   15596 | 21 O2_IMM+1  | PC=0140 IR=01102000 EXT=0 OPA=138 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15597 | 33 EX_MOV    | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15598 | 29 WB_REG    | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+  instr 0140: mov SP, FP
+   15599 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache miss [0140]
+   15600 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15601 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15602 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15603 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15604 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15605 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15606 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15607 |  0 FETCH     | PC=0140 IR=01102000 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache wait [0140]
+   15608 |  0 FETCH     | PC=0144 IR=01191800 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100 | I-cache loaded [0140]
+   15609 |  1 DECODE    | PC=0144 IR=01191800 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15610 |  2 O1_NONE   | PC=0144 IR=01191800 EXT=0 OPA=0 OPB=0 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15611 | 19 O2_REG    | PC=0144 IR=01191800 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15612 | 33 EX_MOV    | PC=0144 IR=01191800 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF0 | NZVC=0100
+   15613 | 29 WB_REG    | PC=0144 IR=01191800 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+  instr 0144: pop FP
+   15614 |  0 FETCH     | PC=0148 IR=03000001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100 | I-cache hit [0144]
+   15615 |  1 DECODE    | PC=0148 IR=03000001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=1 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15616 |  2 O1_NONE   | PC=0148 IR=03000001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=1 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15617 | 18 O2_NONE   | PC=0148 IR=03000001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=1 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15618 | 47 EX_POP    | PC=014C IR=03180001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=1D8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100 | I-cache hit [0148]
+   15619 | 48 EX_POP+1  | PC=014C IR=03180001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15620 |  2 O1_NONE   | PC=014C IR=03180001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15621 | 18 O2_NONE   | PC=014C IR=03180001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF4 | NZVC=0100
+   15622 | 49 EX_POP+2  | PC=014C IR=03180001 EXT=0 OPA=FFF4 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF8 | NZVC=0100 | D-cache hit [FFF4]
+   15623 | 50 EX_POP+3  | PC=014C IR=03180001 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=FFF4 SP=FFF8 | NZVC=0100
+   15624 | 29 WB_REG    | PC=014C IR=03180001 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15625 | 51 EX_POP+4  | PC=014C IR=03180001 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15626 | 52 EX_POP+5  | PC=014C IR=03180001 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+  instr 014C: ret
+   15627 |  0 FETCH     | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100 | I-cache hit [014C]
+   15628 |  1 DECODE    | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15629 |  2 O1_NONE   | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15630 | 18 O2_NONE   | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF4 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15631 | 40 EX_RET    | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF8 DR=0 CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFF8 | NZVC=0100
+   15632 | 41 EX_RET+1  | PC=0150 IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | D-cache hit [FFF8]
+   15633 | 42 EX_RET+2  | PC=009C IR=41000000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100
+  instr 009C: add SP, #4
+   15634 |  0 FETCH     | PC=00A0 IR=10192000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache hit [009C]
+   15635 |  1 DECODE    | PC=00A0 IR=10192000 EXT=0 OPA=0 OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100
+   15636 |  3 O1R_REG   | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100
+   15637 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache miss [00A0]
+   15638 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15639 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15640 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15641 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15642 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15643 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15644 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15645 | 20 O2_IMM    | PC=00A0 IR=10192000 EXT=0 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache wait [00A0]
+   15646 | 20 O2_IMM    | PC=00A4 IR=10192000 EXT=4 OPA=FFFC OPB=FFF4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100 | I-cache loaded [00A0]
+   15647 | 21 O2_IMM+1  | PC=00A4 IR=10192000 EXT=4 OPA=FFFC OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0100
+   15648 | 31 EX_ALU    | PC=00A4 IR=10192000 EXT=4 OPA=10000 OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=FFFC | NZVC=0000
+   15649 | 29 WB_REG    | PC=00A4 IR=10192000 EXT=4 OPA=10000 OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+  instr 00A4: mov [0x0084], #10
+   15650 |  0 FETCH     | PC=00A8 IR=01302000 EXT=4 OPA=10000 OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [00A4]
+   15651 |  1 DECODE    | PC=00A8 IR=01302000 EXT=4 OPA=10000 OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15652 | 13 O1W_ABS   | PC=00AC IR=01302000 EXT=84 OPA=10000 OPB=4 ADST=FFF0 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [00A8]
+   15653 | 14 O1W_ABS+1 | PC=00AC IR=01302000 EXT=84 OPA=10000 OPB=4 ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15654 | 20 O2_IMM    | PC=00B0 IR=01302000 EXT=A OPA=10000 OPB=4 ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [00AC]
+   15655 | 21 O2_IMM+1  | PC=00B0 IR=01302000 EXT=A OPA=10000 OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15656 | 33 EX_MOV    | PC=00B0 IR=01302000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15657 | 30 WB_MEM    | PC=00B0 IR=01302000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | out '\n'
+  instr 00B0: halt
+   15658 |  0 FETCH     | PC=00B4 IR=00000000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | I-cache hit [00B0]
+   15659 |  1 DECODE    | PC=00B4 IR=00000000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15660 |  2 O1_NONE   | PC=00B4 IR=00000000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15661 | 18 O2_NONE   | PC=00B4 IR=00000000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000
+   15662 | 53 EX_HALT   | PC=00B4 IR=00000000 EXT=A OPA=A OPB=A ADST=84 AR=FFF8 DR=9C CNT=0 | R0=0 R1=0 R2=2 R3=0 R4=0 R5=0 R6=0 R7=0 FP=0 SP=10000 | NZVC=0000 | halt

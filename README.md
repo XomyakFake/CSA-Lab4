@@ -403,7 +403,7 @@ machine <code.bin> <input.txt> [--no-cache] [--log-limit N]
 | `MUX_DADDR`   | `sel_daddr` | 0: `ar`, 1: `adst`                                       |
 | `MUX_DR`      | `io_sel`    | 0: `dc_rdata` (D-cache), 1: `io_rdata` (порт ввода)      |
 
-- АЛУ комбинационное. Его выход `alu_out` это общая шина к `PC`, `Register File`, `OPA`, `OPB`, `ADST`, `AR` и к данным записи `wdata`.
+- АЛУ комбинационное. Его выход `alu_out` это общая шина к `PC`, `Register File`, `OPA`, `OPB`, `ADST`, `AR` и к данным записи `wdata`. При `alu_op = 0xF` операция берётся из регистра команды по линии `opcode[3:0]`.
 - Слово `i_word` из I-cache приходит в `IR` и `EXT` по одной линии. `latch_ir` записывает всё слово, `latch_ir_desc` только поле `M1 R1` (биты 23..16).
 - MMIO Decoder по адресу направляет обращение в IO Controller (`0x80`, `0x84`) или в D-cache и сам вырабатывает `io_rd`, `io_wr`, `dc_rd`, `dc_wr`, `io_sel`. Control Unit память и порты не различает.
 
@@ -416,7 +416,7 @@ machine <code.bin> <input.txt> [--no-cache] [--log-limit N]
 - Блок `COND` по флагам и `IR.opcode[3:0]` вычисляет условие команды. `MUX_COND` выбирает условие микроперехода: `cond_true` или `cnt_zero`.
 - `Next address logic` по полям `seq`, `cond_inv` и условию выбирает следующий `mpmPC` через `MUX_mpmPC`.
 - `Stop logic`: если микрокоманда обращается к памяти, а кеш не готов (`i_ready = 0` или `d_ready = 0`), выставляется сигнал `stop`. Он блокирует все `latch_*`, `rf_wr`, `dec_cnt` и запись `mpmPC`, и микрокоманда повторяется в следующем такте.
-- Бит `halt` микрокоманды и сигнал `div_zero` от АЛУ останавливают процессор окончательно.
+- В `Stop logic` приходят также бит `halt` микрокоманды и сигнал `div_zero` от АЛУ. После них `stop` остаётся выставленным навсегда: процессор остановлен окончательно.
 
 Любая команда проходит одну и ту же цепочку:
 
